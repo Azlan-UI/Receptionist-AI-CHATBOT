@@ -1,0 +1,9 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/ReceptionistChatBot.Api/ReceptionistChatBot.Api.csproj" />
+    <Project Path="src/ReceptionistChatBot.Application/ReceptionistChatBot.Application.csproj" />
+    <Project Path="src/ReceptionistChatBot.Domain/ReceptionistChatBot.Domain.csproj" />
+    <Project Path="src/ReceptionistChatBot.Infrastructure/ReceptionistChatBot.Infrastructure.csproj" />
+    <Project Path="src/ReceptionistChatBot.Web/ReceptionistChatBot.Web.csproj" />
+  </Folder>
+</Solution>
