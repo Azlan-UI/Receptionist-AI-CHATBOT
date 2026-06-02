@@ -1,0 +1,77 @@
+@inject IJSRuntime JSRuntime
+
+<footer class="border-top bg-white p-3 p-md-4">
+    <EditForm Model="_model" OnValidSubmit="SubmitAsync">
+        <DataAnnotationsValidator />
+        <div class="input-group">
+            <input @ref="_inputRef"
+                   class="form-control form-control-lg"
+                   placeholder="Type your message..."
+                   @bind-value="_model.Message"
+                   @bind-value:event="oninput"
+                   disabled="@IsDisabled" />
+            <button class="btn btn-primary px-4" type="submit" disabled="@IsDisabled">
+                @if (IsDisabled)
+                {
+                    <span class="spinner-border spinner-border-sm" aria-hidden="true"></span>
+                    <span class="visually-hidden">Sending</span>
+                }
+                else
+                {
+                    <span>Send</span>
+                }
+            </button>
+        </div>
+        <ValidationMessage For="() => _model.Message" class="text-danger small mt-2" />
+    </EditForm>
+</footer>
+
+@code {
+    private readonly ChatInputModel _model = new();
+    private ElementReference _inputRef;
+
+    [Parameter]
+    public bool IsDisabled { get; set; }
+
+    [Parameter]
+    public EventCallback<string> OnSend { get; set; }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender && !IsDisabled)
+        {
+            await FocusInputAsync();
+        }
+    }
+
+    private async Task SubmitAsync()
+    {
+        var message = _model.Message.Trim();
+
+        if (string.IsNullOrWhiteSpace(message))
+        {
+            return;
+        }
+
+        _model.Message = string.Empty;
+        await OnSend.InvokeAsync(message);
+    }
+
+    public async Task FocusInputAsync()
+    {
+        try
+        {
+            await JSRuntime.InvokeVoidAsync("receptionistChat.focusInput", _inputRef.Id);
+        }
+        catch
+        {
+        }
+    }
+
+    private sealed class ChatInputModel
+    {
+        [System.ComponentModel.DataAnnotations.Required]
+        [System.ComponentModel.DataAnnotations.StringLength(2000, MinimumLength = 1)]
+        public string Message { get; set; } = string.Empty;
+    }
+}

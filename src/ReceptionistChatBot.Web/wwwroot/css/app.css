@@ -1,0 +1,152 @@
+html, body {
+    height: 100%;
+}
+
+#blazor-error-ui {
+    display: none;
+}
+
+/* ── Chat layout ─────────────────────────────── */
+
+.chat-thread {
+    max-width: 880px;
+}
+
+.chat-bubble {
+    max-width: min(78%, 680px);
+    overflow-wrap: anywhere;
+    animation: bubble-in 0.25s ease-out;
+}
+
+@keyframes bubble-in {
+    from {
+        opacity: 0;
+        transform: translateY(8px) scale(0.97);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+.message-text {
+    white-space: pre-wrap;
+    line-height: 1.6;
+}
+
+/* ── Smooth scrollbar for chat container ─────── */
+
+#chat-scroll-container {
+    scroll-behavior: smooth;
+    background: #f8f9fa;
+}
+
+#chat-scroll-container::-webkit-scrollbar {
+    width: 6px;
+}
+
+#chat-scroll-container::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+#chat-scroll-container::-webkit-scrollbar-thumb {
+    background: #ced4da;
+    border-radius: 3px;
+}
+
+#chat-scroll-container::-webkit-scrollbar-thumb:hover {
+    background: #adb5bd;
+}
+
+/* ── Typing indicator (bouncing dots) ─────────── */
+
+.typing-dots {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.typing-dots .dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background-color: #6c757d;
+    animation: typing-bounce 1.4s ease-in-out infinite;
+}
+
+.typing-dots .dot:nth-child(1) { animation-delay: 0s; }
+.typing-dots .dot:nth-child(2) { animation-delay: 0.2s; }
+.typing-dots .dot:nth-child(3) { animation-delay: 0.4s; }
+
+@keyframes typing-bounce {
+    0%, 60%, 100% {
+        transform: translateY(0);
+        opacity: 0.4;
+    }
+    30% {
+        transform: translateY(-6px);
+        opacity: 1;
+    }
+}
+
+/* ── Session sidebar ─────────────────────────── */
+
+.session-sidebar {
+    height: 100vh;
+    overflow-y: auto;
+}
+
+.session-sidebar::-webkit-scrollbar {
+    width: 4px;
+}
+
+.session-sidebar::-webkit-scrollbar-thumb {
+    background: #dee2e6;
+    border-radius: 2px;
+}
+
+.session-item {
+    border: none;
+    border-radius: 8px;
+    margin-bottom: 4px;
+    transition: background-color 0.15s ease;
+}
+
+.session-item.active {
+    background-color: #0d6efd;
+    color: #fff;
+}
+
+.session-item.active .text-body-secondary,
+.session-item.active .text-white-50 {
+    color: rgba(255, 255, 255, 0.7) !important;
+}
+
+/* ── Mobile offcanvas tweaks ─────────────────── */
+
+.offcanvas.session-offcanvas {
+    --bs-offcanvas-width: 320px;
+}
+
+@media (max-width: 991.98px) {
+    .chat-bubble {
+        max-width: 90%;
+    }
+
+    #chat-scroll-container {
+        height: calc(100vh - 130px);
+    }
+}
+
+@media (min-width: 992px) {
+    #chat-scroll-container {
+        height: calc(100vh - 120px);
+    }
+}
+
+/* ── Empty state ─────────────────────────────── */
+
+.empty-state-icon {
+    font-size: 3rem;
+    opacity: 0.3;
+}

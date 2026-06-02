@@ -1,0 +1,240 @@
+@page "/admin/company"
+@inject CompanyInformationApiClient CompanyApiClient
+@attribute [Layout(typeof(Layout.AdminLayout))]
+
+<PageTitle>Company Information</PageTitle>
+
+<h2 class="h4 mb-1">Company Information</h2>
+<p class="text-body-secondary mb-4 small">Update office details displayed to visitors</p>
+
+@if (!string.IsNullOrWhiteSpace(_successMessage))
+{
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+        @_successMessage
+        <button type="button" class="btn-close" @onclick="() => _successMessage = null"></button>
+    </div>
+}
+
+@if (!string.IsNullOrWhiteSpace(_errorMessage))
+{
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        @_errorMessage
+        <button type="button" class="btn-close" @onclick="() => _errorMessage = null"></button>
+    </div>
+}
+
+@if (_isLoading)
+{
+    <LoadingSpinner Text="Loading company information" />
+}
+else
+{
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card shadow-sm">
+                <div class="card-body p-4">
+                    <EditForm Model="_model" OnValidSubmit="SaveAsync" FormName="companyForm">
+                        <DataAnnotationsValidator />
+
+                        <div class="mb-3">
+                            <label class="form-label" for="companyName">Company Name</label>
+                            <InputText id="companyName" class="form-control" @bind-Value="_model.CompanyName" />
+                            <ValidationMessage For="() => _model.CompanyName" class="text-danger small" />
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label" for="description">Description</label>
+                            <InputTextArea id="description" class="form-control" rows="3" @bind-Value="_model.Description" />
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label" for="address">Address</label>
+                            <InputTextArea id="address" class="form-control" rows="2" @bind-Value="_model.Address" />
+                        </div>
+
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label" for="phoneNumber">Phone Number</label>
+                                <InputText id="phoneNumber" class="form-control" @bind-Value="_model.PhoneNumber" />
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label" for="email">Email</label>
+                                <InputText id="email" class="form-control" type="email" @bind-Value="_model.Email" />
+                            </div>
+                        </div>
+
+                        <div class="row g-3 mt-1">
+                            <div class="col-md-6">
+                                <label class="form-label" for="websiteUrl">Website URL</label>
+                                <InputText id="websiteUrl" class="form-control" @bind-Value="_model.WebsiteUrl" />
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label" for="businessHours">Business Hours</label>
+                                <InputText id="businessHours" class="form-control" @bind-Value="_model.BusinessHours" placeholder="e.g. Mon-Fri 9am-5pm" />
+                            </div>
+                        </div>
+
+                        <div class="mt-4 d-flex align-items-center gap-3">
+                            <button type="submit" class="btn btn-primary px-4" disabled="@_isSaving">
+                                @if (_isSaving)
+                                {
+                                    <span class="spinner-border spinner-border-sm me-1"></span>
+                                }
+                                Save Changes
+                            </button>
+                            <span class="small text-body-secondary">
+                                @(_model.IsActive ? "Profile is visible to visitors" : "Profile is hidden")
+                            </span>
+                        </div>
+                    </EditForm>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <div class="card shadow-sm">
+                <div class="card-header bg-white">
+                    <h3 class="h6 mb-0">Preview</h3>
+                </div>
+                <div class="card-body">
+                    @if (!string.IsNullOrWhiteSpace(_model.CompanyName))
+                    {
+                        <h4 class="h5">@_model.CompanyName</h4>
+                    }
+                    @if (!string.IsNullOrWhiteSpace(_model.Description))
+                    {
+                        <p class="small text-body-secondary mb-2">@_model.Description</p>
+                    }
+                    <hr class="my-2" />
+                    <dl class="small mb-0">
+                        @if (!string.IsNullOrWhiteSpace(_model.Address))
+                        {
+                            <dt class="text-body-secondary">Address</dt>
+                            <dd class="mb-2">@_model.Address</dd>
+                        }
+                        @if (!string.IsNullOrWhiteSpace(_model.PhoneNumber))
+                        {
+                            <dt class="text-body-secondary">Phone</dt>
+                            <dd class="mb-2">@_model.PhoneNumber</dd>
+                        }
+                        @if (!string.IsNullOrWhiteSpace(_model.Email))
+                        {
+                            <dt class="text-body-secondary">Email</dt>
+                            <dd class="mb-2">@_model.Email</dd>
+                        }
+                        @if (!string.IsNullOrWhiteSpace(_model.BusinessHours))
+                        {
+                            <dt class="text-body-secondary">Hours</dt>
+                            <dd class="mb-0">@_model.BusinessHours</dd>
+                        }
+                    </dl>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private CompanyFormModel _model = new();
+    private bool _isLoading;
+    private bool _isSaving;
+    private string? _errorMessage;
+    private string? _successMessage;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync()
+    {
+        _isLoading = true;
+        _errorMessage = null;
+
+        try
+        {
+            var company = await CompanyApiClient.GetActiveAsync();
+
+            if (company is not null)
+            {
+                _model = new CompanyFormModel
+                {
+                    CompanyName = company.CompanyName,
+                    Description = company.Description ?? string.Empty,
+                    Address = company.Address ?? string.Empty,
+                    PhoneNumber = company.PhoneNumber ?? string.Empty,
+                    Email = company.Email ?? string.Empty,
+                    WebsiteUrl = company.WebsiteUrl ?? string.Empty,
+                    BusinessHours = company.BusinessHours ?? string.Empty,
+                    IsActive = company.IsActive
+                };
+            }
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = $"Failed to load company information: {ex.Message}";
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private async Task SaveAsync()
+    {
+        _isSaving = true;
+        _errorMessage = null;
+        _successMessage = null;
+
+        try
+        {
+            var request = new UpdateCompanyInformationRequest(
+                _model.CompanyName,
+                string.IsNullOrWhiteSpace(_model.Description) ? null : _model.Description,
+                string.IsNullOrWhiteSpace(_model.Address) ? null : _model.Address,
+                string.IsNullOrWhiteSpace(_model.PhoneNumber) ? null : _model.PhoneNumber,
+                string.IsNullOrWhiteSpace(_model.Email) ? null : _model.Email,
+                string.IsNullOrWhiteSpace(_model.WebsiteUrl) ? null : _model.WebsiteUrl,
+                string.IsNullOrWhiteSpace(_model.BusinessHours) ? null : _model.BusinessHours,
+                _model.IsActive);
+
+            await CompanyApiClient.UpsertAsync(request);
+            _successMessage = "Company information saved successfully.";
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = $"Failed to save: {ex.Message}";
+        }
+        finally
+        {
+            _isSaving = false;
+        }
+    }
+
+    private sealed class CompanyFormModel
+    {
+        [System.ComponentModel.DataAnnotations.Required(ErrorMessage = "Company name is required")]
+        [System.ComponentModel.DataAnnotations.StringLength(200)]
+        public string CompanyName { get; set; } = string.Empty;
+
+        [System.ComponentModel.DataAnnotations.StringLength(2000)]
+        public string? Description { get; set; }
+
+        [System.ComponentModel.DataAnnotations.StringLength(500)]
+        public string? Address { get; set; }
+
+        [System.ComponentModel.DataAnnotations.StringLength(30)]
+        public string? PhoneNumber { get; set; }
+
+        [System.ComponentModel.DataAnnotations.StringLength(256)]
+        public string? Email { get; set; }
+
+        [System.ComponentModel.DataAnnotations.StringLength(500)]
+        public string? WebsiteUrl { get; set; }
+
+        [System.ComponentModel.DataAnnotations.StringLength(1000)]
+        public string? BusinessHours { get; set; }
+
+        public bool IsActive { get; set; } = true;
+    }
+}

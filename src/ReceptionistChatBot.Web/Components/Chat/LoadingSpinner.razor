@@ -1,0 +1,9 @@
+<div class="d-flex align-items-center justify-content-center py-5" role="status">
+    <div class="spinner-border text-primary me-3" aria-hidden="true"></div>
+    <span class="text-body-secondary">@Text</span>
+</div>
+
+@code {
+    [Parameter]
+    public string Text { get; set; } = "Loading";
+}

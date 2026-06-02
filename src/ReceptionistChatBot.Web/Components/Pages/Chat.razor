@@ -1,0 +1,264 @@
+﻿@page "/"
+@inject ChatApiClient ChatApiClient
+@inject IJSRuntime JSRuntime
+
+<PageTitle>AI Receptionist</PageTitle>
+
+<section class="container-fluid px-0">
+    <div class="row g-0 min-vh-100">
+
+        @* ── Desktop sidebar (lg+) ── *@
+        <aside class="col-lg-4 col-xl-3 border-end bg-white d-none d-lg-flex session-sidebar">
+            @SidebarContent
+        </aside>
+
+        @* ── Mobile offcanvas sidebar ── *@
+        <div class="offcanvas offcanvas-start session-offcanvas d-lg-none" id="sessions-offcanvas">
+            <div class="offcanvas-header border-bottom">
+                <div>
+                    <h2 class="h5 mb-0">AI Receptionist</h2>
+                    <p class="text-body-secondary small mb-0">Company support chat</p>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+            </div>
+            <div class="offcanvas-body p-3">
+                @SidebarContent
+            </div>
+        </div>
+
+        @* ── Main chat area ── *@
+        <div class="col-12 col-lg-8 col-xl-9 d-flex flex-column">
+            <ChatHeader SessionId="@_sessionId" IsConnected="@(_sessionId is not null)" />
+
+            <div id="chat-scroll-container" class="flex-grow-1 overflow-auto p-3 p-md-4">
+                <div class="mx-auto chat-thread">
+                    @if (_isLoadingHistory)
+                    {
+                        <LoadingSpinner Text="Loading conversation" />
+                    }
+                    else if (_messages.Count == 0)
+                    {
+                        <div class="text-center py-5">
+                            <div class="display-6 mb-3">How can I help?</div>
+                            <p class="text-body-secondary mb-0">Ask about company services, hours, contact details, or common questions.</p>
+                        </div>
+                    }
+                    else
+                    {
+                        @foreach (var message in _messages)
+                        {
+                            <ChatMessageBubble Message="message" />
+                        }
+                    }
+
+                    @if (_isAssistantTyping)
+                    {
+                        <TypingIndicator />
+                    }
+                </div>
+            </div>
+
+            <ChatInput @ref="_chatInput" IsDisabled="_isBusy" OnSend="SendMessageAsync" />
+        </div>
+
+    </div>
+</section>
+
+@code {
+    private ChatInput _chatInput = null!;
+    private readonly List<ChatMessageDto> _messages = [];
+    private IReadOnlyList<ChatSessionDto> _sessions = [];
+    private Guid? _sessionId;
+    private bool _isBusy;
+    private bool _isAssistantTyping;
+    private bool _isLoadingHistory;
+    private string? _errorMessage;
+    private string? _statusMessage;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await RefreshSessionsAsync();
+        await StartNewSessionAsync();
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        await ScrollToLatestMessageAsync();
+
+        if (!_isBusy && _sessionId is not null)
+        {
+            await _chatInput.FocusInputAsync();
+        }
+    }
+
+    private async Task StartNewSessionAsync()
+    {
+        await RunSafelyAsync(async () =>
+        {
+            _isBusy = true;
+            _statusMessage = "Starting a new chat...";
+
+            _sessionId = await ChatApiClient.CreateSessionAsync();
+            _messages.Clear();
+            await RefreshSessionsAsync();
+            _statusMessage = null;
+        });
+
+        _isBusy = false;
+    }
+
+    private async Task LoadSessionAsync(Guid sessionId)
+    {
+        await RunSafelyAsync(async () =>
+        {
+            _isLoadingHistory = true;
+            _sessionId = sessionId;
+            _messages.Clear();
+            _messages.AddRange(await ChatApiClient.GetHistoryAsync(sessionId));
+        });
+
+        _isLoadingHistory = false;
+    }
+
+    private async Task SendMessageAsync(string message)
+    {
+        if (string.IsNullOrWhiteSpace(message))
+        {
+            return;
+        }
+
+        await RunSafelyAsync(async () =>
+        {
+            _isBusy = true;
+            _isAssistantTyping = true;
+
+            var activeSessionId = _sessionId ?? await ChatApiClient.CreateSessionAsync();
+            _sessionId = activeSessionId;
+
+            _messages.Add(new ChatMessageDto(
+                Guid.NewGuid(),
+                activeSessionId,
+                MessageRole.User,
+                message,
+                null,
+                null,
+                DateTime.UtcNow));
+
+            await ScrollToLatestMessageAsync();
+
+            var response = await ChatApiClient.SendMessageAsync(activeSessionId, message);
+
+            _messages.Add(new ChatMessageDto(
+                Guid.NewGuid(),
+                response.ConversationSessionId,
+                MessageRole.Assistant,
+                response.Reply,
+                response.DetectedIntent,
+                response.ConfidenceScore,
+                DateTime.UtcNow));
+
+            await RefreshSessionsAsync();
+        });
+
+        _isAssistantTyping = false;
+        _isBusy = false;
+    }
+
+    private async Task RefreshSessionsAsync()
+    {
+        _sessions = await ChatApiClient.GetSessionsAsync();
+    }
+
+    private async Task RunSafelyAsync(Func<Task> action)
+    {
+        _errorMessage = null;
+
+        try
+        {
+            await action();
+        }
+        catch (Exception exception)
+        {
+            _errorMessage = exception.Message;
+        }
+        finally
+        {
+            _statusMessage = null;
+            StateHasChanged();
+        }
+    }
+
+    private async Task ScrollToLatestMessageAsync()
+    {
+        try
+        {
+            await JSRuntime.InvokeVoidAsync("receptionistChat.scrollToLatest", "chat-scroll-container");
+        }
+        catch
+        {
+        }
+    }
+
+    private string FormatSessionId(Guid id)
+    {
+        var raw = id.ToString();
+        return "Chat " + raw[..4] + "...";
+    }
+
+    @* ── Shared sidebar content used by both desktop and mobile ── *@
+    private RenderFragment SidebarContent => @<div class="d-flex flex-column h-100">
+        <div class="border-bottom p-3">
+            <div class="d-flex align-items-center justify-content-between gap-3">
+                <div>
+                    <h1 class="h5 mb-1">AI Receptionist</h1>
+                    <p class="text-body-secondary mb-0 small">Company support chat</p>
+                </div>
+                <button class="btn btn-primary btn-sm" type="button" @onclick="StartNewSessionAsync" disabled="@_isBusy">
+                    + New
+                </button>
+            </div>
+        </div>
+
+        <div class="flex-grow-1 overflow-auto p-3">
+            @if (!string.IsNullOrWhiteSpace(_statusMessage))
+            {
+                <div class="alert alert-info py-2 small" role="status">@_statusMessage</div>
+            }
+
+            @if (!string.IsNullOrWhiteSpace(_errorMessage))
+            {
+                <div class="alert alert-danger py-2 small" role="alert">@_errorMessage</div>
+            }
+
+            @if (_sessions.Count == 0)
+            {
+                <p class="text-body-secondary text-center small mt-4">No conversations yet.</p>
+            }
+
+            <div class="list-group list-group-flush">
+                @foreach (var session in _sessions)
+                {
+                    <button class="list-group-item list-group-item-action session-item @(session.Id == _sessionId ? "active" : "")"
+                            type="button"
+                            @onclick="() => LoadSessionAsync(session.Id)">
+                        <div class="d-flex justify-content-between align-items-center gap-2">
+                            <span class="text-truncate small fw-medium">@FormatSessionId(session.Id)</span>
+                            <span class="badge @GetStatusBadgeClass(session.Status)">@session.Status</span>
+                        </div>
+                        <small class="d-block mt-1 @(session.Id == _sessionId ? "text-white-50" : "text-body-secondary")">
+                            @session.CreatedAtUtc.ToLocalTime().ToString("g")
+                        </small>
+                    </button>
+                }
+            </div>
+        </div>
+    </div>;
+
+    private string GetStatusBadgeClass(ChatSessionStatus status) => status switch
+    {
+        ChatSessionStatus.Active => "text-bg-success",
+        ChatSessionStatus.Escalated => "text-bg-warning",
+        ChatSessionStatus.Closed => "text-bg-secondary",
+        _ => "text-bg-light"
+    };
+}
