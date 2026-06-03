@@ -24,16 +24,9 @@ public sealed class FaqRepository : Repository<Faq>, IFaqRepository
 
     public async Task<IReadOnlyList<Faq>> SearchActiveAsync(string query, CancellationToken cancellationToken = default)
     {
-        var normalizedQuery = query.Trim();
-
         return await DbSet
             .AsNoTracking()
-            .Where(faq =>
-                faq.IsActive &&
-                (EF.Functions.ILike(faq.Question, $"%{normalizedQuery}%") ||
-                 EF.Functions.ILike(faq.Answer, $"%{normalizedQuery}%") ||
-                 EF.Functions.ILike(faq.Category, $"%{normalizedQuery}%") ||
-                 (faq.Keywords != null && EF.Functions.ILike(faq.Keywords, $"%{normalizedQuery}%"))))
+            .Where(faq => faq.IsActive)
             .OrderBy(faq => faq.DisplayOrder)
             .ThenBy(faq => faq.Question)
             .ToListAsync(cancellationToken);
