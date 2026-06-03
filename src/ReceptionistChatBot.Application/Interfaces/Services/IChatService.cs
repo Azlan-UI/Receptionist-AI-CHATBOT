@@ -9,4 +9,5 @@ public interface IChatService
     Task<ChatResponseDto> SendMessageAsync(ChatRequestDto request, CancellationToken cancellationToken = default);
     Task<IReadOnlyList<ChatMessageDto>> GetConversationMessagesAsync(Guid conversationSessionId, CancellationToken cancellationToken = default);
     Task EscalateToHumanAsync(Guid conversationSessionId, CancellationToken cancellationToken = default);
+    Task DeleteChatSessionAsync(Guid sessionId, CancellationToken cancellationToken = default);
 }

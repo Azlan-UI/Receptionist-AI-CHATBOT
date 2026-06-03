@@ -20,4 +20,13 @@ public sealed class MessageRepository : Repository<Message>, IMessageRepository
             .OrderBy(message => message.CreatedAtUtc)
             .ToListAsync(cancellationToken);
     }
+
+    public async Task DeleteByChatSessionIdAsync(Guid chatSessionId, CancellationToken cancellationToken = default)
+    {
+        var messages = await DbSet
+            .Where(message => message.ChatSessionId == chatSessionId)
+            .ToListAsync(cancellationToken);
+
+        DbSet.RemoveRange(messages);
+    }
 }

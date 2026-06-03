@@ -1,19 +1,14 @@
 @{
     var isUser = Message.Role == MessageRole.User;
-    var rowClass = isUser ? "justify-content-end" : "justify-content-start";
-    var bubbleClass = isUser ? "text-bg-primary" : "bg-white border";
+    var roleLabel = isUser ? "You" : "Assistant";
 }
 
-<div class="d-flex @rowClass mb-3">
-    <article class="chat-bubble rounded-4 shadow-sm p-3 @bubbleClass">
-        <div class="small fw-semibold mb-1">
-            @(isUser ? "You" : "Receptionist")
-        </div>
+<div class="message-row @(isUser ? "user" : "assistant")">
+    <div class="message-bubble @(isUser ? "user" : "assistant")">
+        <div class="message-label">@roleLabel</div>
         <div class="message-text">@Message.Content</div>
-        <div class="small opacity-50 mt-2 text-end">
-            @Message.CreatedAtUtc.ToLocalTime().ToString("t")
-        </div>
-    </article>
+        <div class="message-time">@Message.CreatedAtUtc.ToLocalTime().ToString("t")</div>
+    </div>
 </div>
 
 @code {

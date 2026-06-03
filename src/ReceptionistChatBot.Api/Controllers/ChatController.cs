@@ -67,6 +67,15 @@ public sealed class ChatController : ControllerBase
         return Created($"/api/chat/history/{sessionId}", response);
     }
 
+    [HttpDelete("session/{sessionId:guid}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> DeleteSessionAsync(Guid sessionId, CancellationToken cancellationToken)
+    {
+        await _chatService.DeleteChatSessionAsync(sessionId, cancellationToken);
+        return NoContent();
+    }
+
     [HttpGet("sessions")]
     [ProducesResponseType(typeof(IReadOnlyList<ChatSessionDto>), StatusCodes.Status200OK)]
     public async Task<ActionResult<IReadOnlyList<ChatSessionDto>>> GetSessionsAsync(

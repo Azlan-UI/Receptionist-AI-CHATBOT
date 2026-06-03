@@ -49,6 +49,12 @@ public sealed class ChatApiClient
             ?? [];
     }
 
+    public async Task DeleteSessionAsync(Guid sessionId, CancellationToken cancellationToken = default)
+    {
+        using var response = await _httpClient.DeleteAsync($"/api/chat/session/{sessionId}", cancellationToken);
+        await EnsureSuccessAsync(response, cancellationToken);
+    }
+
     public async Task<IReadOnlyList<ChatSessionDto>> GetSessionsAsync(CancellationToken cancellationToken = default)
     {
         return await _httpClient.GetFromJsonAsync<IReadOnlyList<ChatSessionDto>>(

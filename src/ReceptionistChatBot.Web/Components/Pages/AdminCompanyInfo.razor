@@ -4,8 +4,10 @@
 
 <PageTitle>Company Information</PageTitle>
 
-<h2 class="h4 mb-1">Company Information</h2>
-<p class="text-body-secondary mb-4 small">Update office details displayed to visitors</p>
+<div class="mb-4">
+    <h2 class="admin-page-title">Company Information</h2>
+    <p class="admin-page-subtitle">Update office details displayed to visitors</p>
+</div>
 
 @if (!string.IsNullOrWhiteSpace(_successMessage))
 {
@@ -31,51 +33,51 @@ else
 {
     <div class="row">
         <div class="col-lg-8">
-            <div class="card shadow-sm">
-                <div class="card-body p-4">
+            <div class="admin-card">
+                <div class="card-body">
                     <EditForm Model="_model" OnValidSubmit="SaveAsync" FormName="companyForm">
                         <DataAnnotationsValidator />
 
                         <div class="mb-3">
-                            <label class="form-label" for="companyName">Company Name</label>
-                            <InputText id="companyName" class="form-control" @bind-Value="_model.CompanyName" />
+                            <label class="admin-form-label" for="companyName">Company Name</label>
+                            <InputText id="companyName" class="form-control admin-form-control" @bind-Value="_model.CompanyName" />
                             <ValidationMessage For="() => _model.CompanyName" class="text-danger small" />
                         </div>
 
                         <div class="mb-3">
-                            <label class="form-label" for="description">Description</label>
-                            <InputTextArea id="description" class="form-control" rows="3" @bind-Value="_model.Description" />
+                            <label class="admin-form-label" for="description">Description</label>
+                            <InputTextArea id="description" class="form-control admin-form-control" rows="3" @bind-Value="_model.Description" />
                         </div>
 
                         <div class="mb-3">
-                            <label class="form-label" for="address">Address</label>
-                            <InputTextArea id="address" class="form-control" rows="2" @bind-Value="_model.Address" />
+                            <label class="admin-form-label" for="address">Address</label>
+                            <InputTextArea id="address" class="form-control admin-form-control" rows="2" @bind-Value="_model.Address" />
                         </div>
 
                         <div class="row g-3">
                             <div class="col-md-6">
-                                <label class="form-label" for="phoneNumber">Phone Number</label>
-                                <InputText id="phoneNumber" class="form-control" @bind-Value="_model.PhoneNumber" />
+                                <label class="admin-form-label" for="phoneNumber">Phone Number</label>
+                                <InputText id="phoneNumber" class="form-control admin-form-control" @bind-Value="_model.PhoneNumber" />
                             </div>
                             <div class="col-md-6">
-                                <label class="form-label" for="email">Email</label>
-                                <InputText id="email" class="form-control" type="email" @bind-Value="_model.Email" />
+                                <label class="admin-form-label" for="email">Email</label>
+                                <InputText id="email" class="form-control admin-form-control" type="email" @bind-Value="_model.Email" />
                             </div>
                         </div>
 
                         <div class="row g-3 mt-1">
                             <div class="col-md-6">
-                                <label class="form-label" for="websiteUrl">Website URL</label>
-                                <InputText id="websiteUrl" class="form-control" @bind-Value="_model.WebsiteUrl" />
+                                <label class="admin-form-label" for="websiteUrl">Website URL</label>
+                                <InputText id="websiteUrl" class="form-control admin-form-control" @bind-Value="_model.WebsiteUrl" />
                             </div>
                             <div class="col-md-6">
-                                <label class="form-label" for="businessHours">Business Hours</label>
-                                <InputText id="businessHours" class="form-control" @bind-Value="_model.BusinessHours" placeholder="e.g. Mon-Fri 9am-5pm" />
+                                <label class="admin-form-label" for="businessHours">Business Hours</label>
+                                <InputText id="businessHours" class="form-control admin-form-control" @bind-Value="_model.BusinessHours" placeholder="e.g. Mon-Fri 9am-5pm" />
                             </div>
                         </div>
 
                         <div class="mt-4 d-flex align-items-center gap-3">
-                            <button type="submit" class="btn btn-primary px-4" disabled="@_isSaving">
+                            <button type="submit" class="btn btn-dark px-4" disabled="@_isSaving">
                                 @if (_isSaving)
                                 {
                                     <span class="spinner-border spinner-border-sm me-1"></span>
@@ -92,8 +94,8 @@ else
         </div>
 
         <div class="col-lg-4">
-            <div class="card shadow-sm">
-                <div class="card-header bg-white">
+            <div class="admin-card">
+                <div class="card-header">
                     <h3 class="h6 mb-0">Preview</h3>
                 </div>
                 <div class="card-body">

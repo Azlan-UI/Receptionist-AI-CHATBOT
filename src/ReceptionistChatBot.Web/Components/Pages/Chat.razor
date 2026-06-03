@@ -4,65 +4,69 @@
 
 <PageTitle>AI Receptionist</PageTitle>
 
-<section class="container-fluid px-0">
-    <div class="row g-0 min-vh-100">
+<div class="chat-layout">
 
-        @* ── Desktop sidebar (lg+) ── *@
-        <aside class="col-lg-4 col-xl-3 border-end bg-white d-none d-lg-flex session-sidebar">
+    @* ── Desktop sidebar ── *@
+    <aside class="chat-sidebar d-none d-lg-flex">
+        @SidebarContent
+    </aside>
+
+    @* ── Mobile offcanvas sidebar ── *@
+    <div class="offcanvas chat-offcanvas d-lg-none" id="sessions-offcanvas">
+        <div class="offcanvas-header">
+            <div>
+                <h2 class="h5 mb-0" style="color:#fff;">AI Receptionist</h2>
+                <p class="small mb-0" style="color:#a6adc8;">Company support chat</p>
+            </div>
+            <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+        </div>
+        <div class="offcanvas-body">
             @SidebarContent
-        </aside>
-
-        @* ── Mobile offcanvas sidebar ── *@
-        <div class="offcanvas offcanvas-start session-offcanvas d-lg-none" id="sessions-offcanvas">
-            <div class="offcanvas-header border-bottom">
-                <div>
-                    <h2 class="h5 mb-0">AI Receptionist</h2>
-                    <p class="text-body-secondary small mb-0">Company support chat</p>
-                </div>
-                <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
-            </div>
-            <div class="offcanvas-body p-3">
-                @SidebarContent
-            </div>
         </div>
-
-        @* ── Main chat area ── *@
-        <div class="col-12 col-lg-8 col-xl-9 d-flex flex-column">
-            <ChatHeader SessionId="@_sessionId" IsConnected="@(_sessionId is not null)" />
-
-            <div id="chat-scroll-container" class="flex-grow-1 overflow-auto p-3 p-md-4">
-                <div class="mx-auto chat-thread">
-                    @if (_isLoadingHistory)
-                    {
-                        <LoadingSpinner Text="Loading conversation" />
-                    }
-                    else if (_messages.Count == 0)
-                    {
-                        <div class="text-center py-5">
-                            <div class="display-6 mb-3">How can I help?</div>
-                            <p class="text-body-secondary mb-0">Ask about company services, hours, contact details, or common questions.</p>
-                        </div>
-                    }
-                    else
-                    {
-                        @foreach (var message in _messages)
-                        {
-                            <ChatMessageBubble Message="message" />
-                        }
-                    }
-
-                    @if (_isAssistantTyping)
-                    {
-                        <TypingIndicator />
-                    }
-                </div>
-            </div>
-
-            <ChatInput @ref="_chatInput" IsDisabled="_isBusy" OnSend="SendMessageAsync" />
-        </div>
-
     </div>
-</section>
+
+    @* ── Main chat area ── *@
+    <div class="chat-main">
+        <ChatHeader SessionId="@_sessionId" IsConnected="@(_sessionId is not null)" />
+
+        <div id="chat-scroll-container" class="chat-messages">
+            <div class="chat-thread">
+                @if (_isLoadingHistory)
+                {
+                    <LoadingSpinner Text="Loading conversation" />
+                }
+                else if (_messages.Count == 0)
+                {
+                    <div class="empty-state">
+                        <div class="empty-icon">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" fill="currentColor" viewBox="0 0 16 16">
+                                <path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14m0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16"/>
+                                <path d="M5.255 5.786a.237.237 0 0 0 .241.247h.825c.138 0 .248-.113.266-.25.09-.656.54-1.134 1.342-1.134.686 0 1.314.343 1.314 1.168 0 .635-.374.927-.965 1.371-.673.489-1.206 1.06-1.168 1.987l.003.217a.25.25 0 0 0 .25.246h.811a.25.25 0 0 0 .25-.25v-.105c0-.718.273-.927 1.01-1.486.609-.463 1.244-.977 1.244-2.056 0-1.511-1.276-2.241-2.673-2.241-1.267 0-2.655.59-2.75 2.286m1.557 5.763c0 .533.425.927 1.01.927.609 0 1.028-.394 1.028-.927 0-.552-.42-.94-1.029-.94-.584 0-1.009.388-1.009.94"/>
+                            </svg>
+                        </div>
+                        <h3>How can I help you?</h3>
+                        <p>Ask about company services, hours, contact details, or common questions.</p>
+                    </div>
+                }
+                else
+                {
+                    @foreach (var message in _messages)
+                    {
+                        <ChatMessageBubble Message="message" />
+                    }
+                }
+
+                @if (_isAssistantTyping)
+                {
+                    <TypingIndicator />
+                }
+            </div>
+        </div>
+
+        <ChatInput @ref="_chatInput" IsDisabled="_isBusy" OnSend="SendMessageAsync" />
+    </div>
+
+</div>
 
 @code {
     private ChatInput _chatInput = null!;
@@ -118,6 +122,26 @@
         });
 
         _isLoadingHistory = false;
+    }
+
+    private async Task DeleteSessionAsync(Guid sessionId)
+    {
+        await RunSafelyAsync(async () =>
+        {
+            _isBusy = true;
+
+            await ChatApiClient.DeleteSessionAsync(sessionId);
+
+            if (_sessionId == sessionId)
+            {
+                _sessionId = null;
+                _messages.Clear();
+            }
+
+            await RefreshSessionsAsync();
+        });
+
+        _isBusy = false;
     }
 
     private async Task SendMessageAsync(string message)
@@ -199,66 +223,82 @@
         }
     }
 
-    private string FormatSessionId(Guid id)
+    private static string FormatSessionId(Guid id)
     {
         var raw = id.ToString();
         return "Chat " + raw[..4] + "...";
     }
 
-    @* ── Shared sidebar content used by both desktop and mobile ── *@
     private RenderFragment SidebarContent => @<div class="d-flex flex-column h-100">
-        <div class="border-bottom p-3">
-            <div class="d-flex align-items-center justify-content-between gap-3">
-                <div>
-                    <h1 class="h5 mb-1">AI Receptionist</h1>
-                    <p class="text-body-secondary mb-0 small">Company support chat</p>
-                </div>
-                <button class="btn btn-primary btn-sm" type="button" @onclick="StartNewSessionAsync" disabled="@_isBusy">
-                    + New
+        <div class="chat-sidebar-header">
+            <h1>AI Receptionist</h1>
+            <p>Company support chat</p>
+            <div class="chat-sidebar-actions">
+                <button class="btn-new" type="button" @onclick="StartNewSessionAsync" disabled="@_isBusy">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16">
+                        <path d="M8 2a.5.5 0 0 1 .5.5v5h5a.5.5 0 0 1 0 1h-5v5a.5.5 0 0 1-1 0v-5h-5a.5.5 0 0 1 0-1h5v-5A.5.5 0 0 1 8 2"/>
+                    </svg>
+                    New Chat
                 </button>
             </div>
         </div>
 
-        <div class="flex-grow-1 overflow-auto p-3">
+        <div class="chat-session-list">
             @if (!string.IsNullOrWhiteSpace(_statusMessage))
             {
-                <div class="alert alert-info py-2 small" role="status">@_statusMessage</div>
+                <div class="alert alert-info py-2 small mx-2 mt-2" role="status">@_statusMessage</div>
             }
 
             @if (!string.IsNullOrWhiteSpace(_errorMessage))
             {
-                <div class="alert alert-danger py-2 small" role="alert">@_errorMessage</div>
+                <div class="alert alert-danger py-2 small mx-2 mt-2" role="alert">@_errorMessage</div>
             }
 
             @if (_sessions.Count == 0)
             {
-                <p class="text-body-secondary text-center small mt-4">No conversations yet.</p>
+                <p style="color:#6c7086; text-align:center; font-size:0.8rem; margin-top:24px;">
+                    No conversations yet.
+                </p>
             }
 
-            <div class="list-group list-group-flush">
-                @foreach (var session in _sessions)
-                {
-                    <button class="list-group-item list-group-item-action session-item @(session.Id == _sessionId ? "active" : "")"
+            @foreach (var session in _sessions)
+            {
+                <div class="session-item @(session.Id == _sessionId ? "active" : "")"
+                     @onclick="() => LoadSessionAsync(session.Id)">
+                    <div class="session-info">
+                        <div class="session-name">@FormatSessionId(session.Id)</div>
+                        <div class="session-date">@session.CreatedAtUtc.ToLocalTime().ToString("g")</div>
+                    </div>
+                    <span class="session-status badge @GetStatusBadgeClass(session.Status)">@GetStatusLabel(session.Status)</span>
+                    <button class="btn-delete-session"
                             type="button"
-                            @onclick="() => LoadSessionAsync(session.Id)">
-                        <div class="d-flex justify-content-between align-items-center gap-2">
-                            <span class="text-truncate small fw-medium">@FormatSessionId(session.Id)</span>
-                            <span class="badge @GetStatusBadgeClass(session.Status)">@session.Status</span>
-                        </div>
-                        <small class="d-block mt-1 @(session.Id == _sessionId ? "text-white-50" : "text-body-secondary")">
-                            @session.CreatedAtUtc.ToLocalTime().ToString("g")
-                        </small>
+                            @onclick:stopPropagation
+                            @onclick="() => DeleteSessionAsync(session.Id)"
+                            title="Delete conversation"
+                            aria-label="Delete session">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16">
+                            <path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5m2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5m3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0z"/>
+                            <path d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4zM2.5 3h11V2h-11z"/>
+                        </svg>
                     </button>
-                }
-            </div>
+                </div>
+            }
         </div>
     </div>;
 
     private string GetStatusBadgeClass(ChatSessionStatus status) => status switch
     {
-        ChatSessionStatus.Active => "text-bg-success",
-        ChatSessionStatus.Escalated => "text-bg-warning",
-        ChatSessionStatus.Closed => "text-bg-secondary",
-        _ => "text-bg-light"
+        ChatSessionStatus.Active => "bg-success",
+        ChatSessionStatus.Escalated => "bg-warning",
+        ChatSessionStatus.Closed => "bg-secondary",
+        _ => "bg-light text-dark"
+    };
+
+    private string GetStatusLabel(ChatSessionStatus status) => status switch
+    {
+        ChatSessionStatus.Active => "Active",
+        ChatSessionStatus.Escalated => "Escalated",
+        ChatSessionStatus.Closed => "Closed",
+        _ => "Unknown"
     };
 }

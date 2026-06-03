@@ -139,6 +139,18 @@ public sealed class ChatService : IChatService
             .ToList();
     }
 
+    public async Task DeleteChatSessionAsync(Guid sessionId, CancellationToken cancellationToken = default)
+    {
+        var session = await _chatSessionRepository.GetByIdAsync(sessionId, cancellationToken)
+            ?? throw new NotFoundException($"Chat session '{sessionId}' was not found.");
+
+        await _messageRepository.DeleteByChatSessionIdAsync(sessionId, cancellationToken);
+        _chatSessionRepository.Remove(session);
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
+
+        _logger.LogInformation("Deleted chat session {ChatSessionId} and its messages.", sessionId);
+    }
+
     public async Task EscalateToHumanAsync(
         Guid conversationSessionId,
         CancellationToken cancellationToken = default)
